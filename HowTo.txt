@@ -1,0 +1,355 @@
+1) Create DB & Add credentials to .env
+
+2) Create Product Model & Migration
+    
+    a. 
+        php artisan make:model Product -m
+
+3) Set up and migrate products DB table, using generated migration file (from step 2a)
+
+    a. [database\migrations\YYYY_MM_DD_create_products_table.php]
+
+        public function up()
+        {
+            Schema::create('products', function (Blueprint $table) {
+                
+                $table->bigIncrements('product_id');
+                $table->string('product_name', 255)->nullable();
+                $table->text('product_desc')->nullable();
+                $table->string('product_category', 20)->nullable();
+                $table->float('product_price')->nullable();
+                $table->timestamps();
+            });
+        }
+
+    b. 
+        php artisan migrate
+
+    c. Update primary key & set fillable field on Product model [app\Models\Product.php]
+
+        protected $primaryKey = 'product_id';
+
+        protected $fillable = ['product_name', 'product_desc', 'product_category', 'product_price'];
+
+
+4) Create, set up & run Products Database Seeder (When run, truncate table and populate with 10 dummy records)
+
+    a. 
+        php artisan make:seeder ProductSeeder
+
+    b. [database\seeders\ProductsTableSeeder.php]
+
+        public function run()
+        {
+            //Truncate existing records to start from scratch
+            Product::truncate();
+
+            $faker = Factory::create();
+
+            for($i = 0; $i < 10; $i++)
+            {
+                Product::create([
+                    'product_name' => "Product ".($i + 1),
+                    'product_desc' => "This is product ".($i + 1),
+                    'product_category' => "Category ".random_int(1, 10),
+                    'product_price' => ($faker->numberBetween(0, 99999) / 100),
+                ]);
+            }
+        }
+
+        /* Add above ProductsTableSeeder class:
+            use App\Models\Product;
+            use Faker\Factory;
+        */
+
+    c. 
+        php artisan db:seed --class=ProductSeeder
+
+
+5) Create Products Controller (Resource Controller [-r] )
+
+    a.
+        php artisan make:controller ProductController -r
+
+
+6) Set up API routes to ProductController
+
+    a. [routes\api.php]
+
+        Route::get('/products/{category?}', [ProductController::class, 'index']);
+        Route::post('/products', [ProductController::class, 'store']);
+        Route::put('/products/{product}', [ProductController::class, 'update']);
+        Route::delete('/products/{product}', [ProductController::class, 'destroy']);
+
+        /* Add:
+            use App\Http\Controllers\ProductController;
+        */
+
+
+7) Add functionality to the Controller class functions
+
+        /* Add above ProductController class:
+            use App\Models\Product;
+        */
+
+    a. SELECT RECORDS
+
+        public function index($category = NULL)
+        {
+
+            $product = Product::all();
+
+            if(isset($category) && trim($category) != "") {
+                //If they add a category to the URL, filter by category
+                $product = $product->where('product_category','=',$category);
+            }
+
+            return $product;
+        }
+
+        /*
+            TEST IN POSTMAN APP:
+            1) New HTTP Request
+            2) Request Type = GET
+            3) Request URL = http://[domain]/api/products
+            4) Add header:
+                Content-Type: application/json
+            5) Click Send to see all records
+        */
+
+
+    b. INSERT RECORD
+
+        public function store(Request $request)
+        {
+            
+            $request->validate([
+                "name" => "required|max:255",
+                "description" => "required|max:1000",
+                "category" => "required|max:20",
+                "price" => "bail|required|numeric|between:0.00,999999.99",
+            ]);
+
+            return Product::create([
+                'product_name' => $request->input('name'),
+                'product_desc' => $request->input('description'),
+                'product_category' => $request->input('category'),
+                'product_price' => $request->input('price')
+            ]);
+        }
+
+        /*
+            TEST IN POSTMAN APP:
+            1) New HTTP Request
+            2) Request Type = POST
+            3) Request URL = http://[domain]/api/products
+            4) Add header:
+                Content-Type: application/json
+            5) Add body (raw):
+                {
+                    "name": "Product 1",
+                    "description": "This is product 1",
+                    "category": "Category1",
+                    "price": 9.99
+                }
+            6) Click Send to see the stored record (if passed) - will see error (not a JSON response error) if validation fails - this is fixed further down
+        */
+
+
+    c. UPDATE RECORD
+
+        public function update(Request $request, $id)
+        {
+
+            $product = Product::findOrFail($id);
+
+            $request->validate([
+                "name" => "required|max:255",
+                "description" => "required|max:1000",
+                "category" => "required|max:20",
+                "price" => "bail|required|numeric|between:0.00,999999.99",
+            ]);
+
+            $success = $product->update([
+                'product_name' => $request->input('name'),
+                'product_desc' => $request->input('description'),
+                'product_category' => $request->input('category'),
+                'product_price' => $request->input('price')
+            ]);
+
+            return [
+                'success' => $success
+            ];
+        }
+
+        /*
+            TEST IN POSTMAN APP:
+            1) New HTTP Request
+            2) Request Type = PUT
+            3) Request URL = http://[domain]/api/products/{productId}
+            4) Add header:
+                Content-Type: application/json
+            5) Add body (raw):
+                {
+                    "name": "Product 1 (Updated)",
+                    "description": "This is product 1 (Updated)",
+                    "category": "Category1 (Updated)",
+                    "price": 4.99
+                }
+            6) Click Send to see the {"success":true} response (if passed) - will see error (not a JSON response error) if validation fails / record not found in db - this is fixed further down
+        */ 
+
+
+    d. DELETE RECORD
+
+        public function destroy($id)
+        {
+            try {
+                $product = Product::findOrFail($id);
+
+            } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+
+                return response()->json([
+                    'success' => false,
+                    'message' => '404 not found',
+                ]);
+            }
+
+            $success = $product->delete();
+
+            return [
+                'success' => $success
+            ];
+        }
+
+        /*
+            TEST IN POSTMAN APP:
+            1) New HTTP Request
+            2) Request Type = DELETE
+            3) Request URL = http://[domain]/api/products/{productId}
+            4) Add header:
+                Content-Type: application/json
+            
+            5) Click Send to see the {"success":true} message (if passed) - or {"success": false, "message": "404 not found"} if db record not found
+        */ 
+
+
+8) Add StoreProductRequest FormRequest
+
+    a.
+        php artisan make:request StoreProductRequest
+
+
+9) Move validations from ProductController to StoreProductRequest
+
+    [app\Http\Requests\StoreProductRequest.php]
+
+        /* DELETE:
+            authorize()
+        */
+
+        /* ADD:
+            use Illuminate\Http\Exceptions\HttpResponseException;
+            use Illuminate\Contracts\Validation\Validator;
+        */
+
+        a.
+
+            public function rules()
+            {
+                return [
+                    "name" => "required|max:255",
+                    "description" => "required|max:1000",
+                    "category" => "required|max:20",
+                    "price" => "bail|required|numeric|between:0.00,999999.99",
+                ];
+            }
+
+        b. 
+            public function messages()
+            {
+                return [
+                    "name.required" => "Enter product name",
+                    "name.max" => "Product name must not exceed 255 characters",
+
+                    "description.required" => "Enter product description",
+                    "description.max" => "Product description must not exceed 1,000 characters",
+
+                    "category.required" => "Enter product category",
+                    "category.max" => "Product category must not exceed 30 characters",
+
+                    "price.required" => "Enter product price",
+                    "price.numeric" => "Product price must be a numeric value",
+                    "price.between" => "Product price must be £0 or more & less than £1,000,000"
+                ];
+            }
+
+        c.
+            public function failedValidation(Validator $validator)
+            {
+                throw new HttpResponseException(response()->json([
+                    'success' => false,
+                    'message' => 'Validation errors',
+                    'data' => $validator->errors()
+                ]));
+            }
+
+    [app\Http\Controllers\ProductController]
+
+        /* ADD:
+            use App\Http\Requests\StoreProductRequest;
+        */
+
+        d. store() CHANGE TO:
+
+            public function store(StoreProductRequest $request)
+            {
+
+                $validated = $request->validated();
+
+                return Product::create([
+                    'product_name' => $validated['name'],
+                    'product_desc' => $validated['description'],
+                    'product_category' => $validated['category'],
+                    'product_price' => $validated['price'],
+                ]);
+
+            }
+
+            /* Re run POSTMAN for step 7b (fixed following error: "will see error (not a JSON response error) if validation fails"):
+            
+                ... 6) Click Send to see the stored record (if passed) - or json response error if failed */
+
+        e. update() CHANGE TO:
+
+            public function update(StoreProductRequest $request, $id)
+            {
+                try {
+                    $product = Product::findOrFail($id);
+
+                } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+
+                    return response()->json([
+                        'success' => false,
+                        'message' => '404 not found',
+                    ]);
+                }
+
+                $validated = $request->validated();
+
+                $success = $product->update([
+                    'product_name' => $validated['name'],
+                    'product_desc' => $validated['description'],
+                    'product_category' => $validated['category'],
+                    'product_price' => $validated['price'],
+                ]);
+
+                return [
+                    'success' => $success
+                ];
+            }
+
+            /* Re run POSTMAN for step 7c (fixed following error: "will see error (not a JSON response error) if validation fails / record not found in db"):
+            
+            ... 6) Click Send to see the {"success":true} response (if passed) - or json response error if failed */
+                
