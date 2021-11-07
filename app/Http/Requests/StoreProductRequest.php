@@ -27,27 +27,27 @@ class StoreProductRequest extends FormRequest
     public function messages()
     {
         return [
-            "name.required" => "Enter product name",
-            "name.max" => "Product name must not exceed 255 characters",
+            "name.required" => __("Enter product name"),
+            "name.max" => __("Product name must not exceed 255 characters"),
 
-            "description.required" => "Enter product description",
-            "description.max" => "Product description must not exceed 1,000 characters",
+            "description.required" => __("Enter product description"),
+            "description.max" => __("Product description must not exceed 1,000 characters"),
 
-            "category.required" => "Enter product category",
-            "category.max" => "Product category must not exceed 30 characters",
+            "category.required" => __("Enter product category"),
+            "category.max" => __("Product category must not exceed 30 characters"),
 
-            "price.required" => "Enter product price",
-            "price.numeric" => "Product price must be a numeric value",
-            "price.between" => "Product price must be £0 or more & less than £1,000,000"
+            "price.required" => __("Enter product price"),
+            "price.numeric" => __("Product price must be a numeric value"),
+            "price.between" => __("Product price must be £0 or more & less than £1,000,000")
         ];
     }
 
     public function failedValidation(Validator $validator)
     {
         throw new HttpResponseException(response()->json([
-            'success' => false,
-            'message' => 'Validation errors',
-            'data' => $validator->errors()
+            __('success') => __('false'),
+            __('message') => __('Validation errors'),
+            __('data') => $validator->errors()
         ]));
     }
 }

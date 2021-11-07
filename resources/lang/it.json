@@ -1,0 +1,30 @@
+{
+
+    "true":"vero",
+    "false":"falso",
+
+    "success":"successo",
+    "message":"messaggio",
+    "Validation errors":"Errori di convalida",
+    "data":"dati",
+    
+    "name":"nome",
+    "description":"descrizione",
+    "category":"categoria",
+    "price":"prezzo",
+
+    "Enter product name":"Inserisci il nome del prodotto",
+    "Product name must not exceed 255 characters":"Il nome del prodotto non deve superare i 255 caratteri",
+
+    "Enter product description":"Inserisci la descrizione del prodotto",
+    "Product description must not exceed 1,000 characters":"La descrizione del prodotto non deve superare i 1.000 caratteri",
+
+    "Enter product category":"Inserisci la categoria del prodotto",
+    "Product category must not exceed 30 characters":"La categoria del prodotto non deve superare i 30 caratteri",
+
+    "Enter product price":"Inserisci il prezzo del prodotto",
+    "Product price must be a numeric value":"Il prezzo del prodotto deve essere un valore numerico",
+    "Product price must be £0 or more & less than £1,000,000":"Il prezzo del prodotto deve essere pari o superiore a £ 0 e inferiore a £ 1.000.000",
+
+    "404 not found": "404 non trovato"
+}
